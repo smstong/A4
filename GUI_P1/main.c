@@ -66,9 +66,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         for (int i = 0; i < sizeof(btns) / sizeof(btns[0]); i++) {
             RECT rect;
             GetWindowRect(btns[i].hWnd, &rect);
-            
+            MapWindowPoints(HWND_DESKTOP, GetParent(btns[i].hWnd), (LPPOINT)&rect, 2);
+
             MoveWindow(btns[i].hWnd, 
-                rect.left, 
+                rect.left+10, 
                 rect.top, 
                 rect.right - rect.left, 
                 rect.bottom - rect.top, 
