@@ -12,6 +12,7 @@ Note:
 #include <Windows.h>
 #include <stdio.h>
 #include <wchar.h>
+#include <tchar.h>
 
 //const wchar_t* MutexName = L"MainExit";
 const wchar_t* strEventMainExit = L"Event_MainExit";
@@ -85,7 +86,10 @@ int main(int argc, char** argv)
 int WhoWin()
 {
 	int i = 0;
-	int winner = -1;
+	static int winner = -1;
+	if (winner < 0) {
+
+	}
 	EnterCriticalSection(&cs);
 	for (i = 0; i < 5; i++) {
 		if (cars[i].pos >= 10) {
@@ -115,7 +119,7 @@ void MessageBoxF(TCHAR* szCaption, TCHAR* format, ...)
 	va_list args;
 
 	va_start(args, format);
-	_vsnwprintf(szBuf, sizeof(szBuf) / sizeof(TCHAR), format, args);
+	_vsntprintf(szBuf, sizeof(szBuf) / sizeof(TCHAR), format, args);
 	va_end(args);
 
 	MessageBox(NULL, szBuf, szCaption, 0);

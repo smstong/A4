@@ -35,12 +35,16 @@ namespace WpfApp1
         void ThreadProc(Object state)
         {
             MainWindow win = state as MainWindow;
+            MessageBox.Show(Thread.CurrentThread.ManagedThreadId.ToString());
             lock (this)
             {
                 this.Dispatcher.BeginInvoke(
                     System.Windows.Threading.DispatcherPriority.Background,
                     new Action(
-                        () => this.Btn1.Background = Brushes.Red)
+                        () => {
+                            MessageBox.Show(Thread.CurrentThread.ManagedThreadId.ToString());
+                            this.Btn1.Background = Brushes.Red; 
+                        })
                     );
             }
         }

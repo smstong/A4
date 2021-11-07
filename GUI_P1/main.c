@@ -1,10 +1,48 @@
 #include <windows.h>
+#include <process.h>
+#include <tchar.h>
+#include <time.h>
 
+#define IDC_BUTTON_RESET_GAME 2001
+#define IDC_BUTTON_START_GAME_SYNC 2002
+#define IDC_BUTTON_START_GAME_NONSYNC 2003
 #define IDC_BUTTON1 1001
 
-const TCHAR* g_szClassName = TEXT("myWindowClass");
+typedef struct _Car
+{
+    HWND hWnd;
+    int controlID;
+    TCHAR* text;
+}Car;
 
-HWND CreateButton(HWND parent, int controlID, TCHAR* text, int x, int y, int width, int height)
+const TCHAR* g_szClassName = TEXT("myWindowClass");
+static CRITICAL_SECTION csCalWinner;
+static BOOL g_IsSyncMode = FALSE;
+static BOOL g_HasSomeoneWon = FALSE;
+
+static Car RaceCars[] = {
+    {NULL, IDC_BUTTON1, TEXT("Red") },
+    {NULL, IDC_BUTTON1 + 1, TEXT("Blue") },
+    {NULL, IDC_BUTTON1 + 2, TEXT("Green") },
+    {NULL, IDC_BUTTON1 + 3, TEXT("Yellow") },
+    {NULL, IDC_BUTTON1 + 4, TEXT("Orange") },
+};
+
+// MessageBox version of "printf"
+void MessageBoxF(TCHAR* szCaption, TCHAR* format, ...)
+{
+    TCHAR szBuf[1024];
+    memset(szBuf, 0, sizeof(szBuf));
+    va_list args;
+
+    va_start(args, format);
+    _vsntprintf_s(szBuf, sizeof(szBuf) / sizeof(TCHAR), 1023, format, args);
+    va_end(args);
+
+    MessageBox(NULL, szBuf, szCaption, 0);
+}
+
+static HWND CreateButton(HWND parent, int controlID, TCHAR* text, int x, int y, int width, int height)
 {
     HWND hwndButton = CreateWindow(
         TEXT("BUTTON"),  // Predefined class; Unicode assumed 
@@ -21,40 +59,144 @@ HWND CreateButton(HWND parent, int controlID, TCHAR* text, int x, int y, int wid
     return hwndButton;
 }
 
-typedef struct _Button
+static LRESULT CALLBACK OnCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    HWND hWnd;
-    int controlID;
-    TCHAR* text;
-}Button;
+    // Init CS
+    InitializeCriticalSection(&csCalWinner);
 
-Button btns[] = {
-    {NULL, IDC_BUTTON1, TEXT("Red") },
-    {NULL, IDC_BUTTON1 + 1, TEXT("Blue") },
-    {NULL, IDC_BUTTON1 + 2, TEXT("Green") },
-};
+    // Init rand
+    srand(time(NULL));
 
-LRESULT CALLBACK OnCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    for (int i = 0; i <sizeof(btns)/sizeof(btns[0]); i++) {
-        btns[i].hWnd = CreateButton(hwnd, btns[i].controlID, btns[i].text, 0, 40*i, 100, 30);
+    // Init UI
+    CreateButton(hwnd,
+        IDC_BUTTON_RESET_GAME,
+        TEXT("RESET"),
+        0, 20,
+        150, 50);
+    CreateButton(hwnd,
+        IDC_BUTTON_START_GAME_SYNC,
+        TEXT("Start (Sync)"),
+        160*1, 20,
+        150, 50);
+    CreateButton(hwnd,
+        IDC_BUTTON_START_GAME_NONSYNC,
+        TEXT("Start (Non-Sync)"),
+        160*2, 20,
+        150, 50);
+
+    for (int i = 0; i <sizeof(RaceCars)/sizeof(RaceCars[0]); i++) {
+        RaceCars[i].hWnd = CreateButton(hwnd,
+            RaceCars[i].controlID, 
+            RaceCars[i].text, 
+            20, 200+60*i, 
+            200, 50);
     }
+ 
     return 0;
 }
 
-LRESULT CALLBACK OnCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK OnDestroy(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    // Del CS
+    DeleteCriticalSection(&csCalWinner);
+    return TRUE;
+}
+
+
+static int CheckWiner(Car* car, int pos, int finishLine)
+{
+    // Check if I won
+    if (g_IsSyncMode) {
+        EnterCriticalSection(&csCalWinner);
+    }
+
+    if(pos > finishLine){
+        if (g_HasSomeoneWon == FALSE) {
+            // simulate delay, so others may NOT notice I won
+            Sleep(100);
+            g_HasSomeoneWon = TRUE;
+            MessageBoxF(TEXT("Winner"), TEXT("%s won"), car->text);
+        }
+    }
+
+    if (g_IsSyncMode) {
+        LeaveCriticalSection(&csCalWinner);
+    }
+
+    return g_HasSomeoneWon;
+}
+static void RacingThread(void* state)
+{
+    Car* car = (Car*)state;
+    RECT carRect;
+    RECT winRect;
+    while (TRUE) {
+
+        GetWindowRect(car->hWnd, &carRect);
+        MapWindowPoints(HWND_DESKTOP, GetParent(car->hWnd), (LPPOINT)&carRect, 2);
+        GetClientRect(GetParent(car->hWnd), &winRect);
+
+        if (CheckWiner(car, carRect.left, (winRect.right - winRect.left) / 2) == TRUE) {
+            break;
+        }
+
+        // Move car
+        MoveWindow(car->hWnd,
+            carRect.left + rand()%10,
+            carRect.top,
+            carRect.right - carRect.left,
+            carRect.bottom - carRect.top,
+            TRUE);
+        // simulate time used to move
+        Sleep(rand()%20);
+    }
+}
+
+static void StartRace(BOOL _isSync)
+{
+    g_IsSyncMode = _isSync;
+    for (int i = 0; i < sizeof(RaceCars) / sizeof(RaceCars[0]); i++) {
+        _beginthread(RacingThread, 0, &RaceCars[i]);
+    }
+}
+static void ResetGame()
+{
+    g_IsSyncMode = FALSE;
+    g_HasSomeoneWon = FALSE;
+
+    for (int i = 0; i < sizeof(RaceCars) / sizeof(RaceCars[0]); i++) {
+        MoveWindow(RaceCars[i].hWnd,
+            20, 200 + 60 * i,
+            200, 50, TRUE);
+    }
+}
+static LRESULT CALLBACK OnLeftButtonDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    StartRace(FALSE);
+}
+static LRESULT CALLBACK OnRightButtonDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    StartRace(TRUE);
+}
+static LRESULT CALLBACK OnCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     DWORD ctrID = LOWORD(wParam);
     DWORD notifyCode = HIWORD(wParam);
 
-    if (notifyCode == BN_CLICKED && ctrID == IDC_BUTTON1) {
-        MessageBox(NULL, TEXT("click"), TEXT("Info"), MB_OK);
+    if (notifyCode == BN_CLICKED && ctrID == IDC_BUTTON_START_GAME_NONSYNC) {
+        StartRace(FALSE);
+    }
+    if (notifyCode == BN_CLICKED && ctrID == IDC_BUTTON_START_GAME_SYNC) {
+        StartRace(TRUE);
+    }
+    if (notifyCode == BN_CLICKED && ctrID == IDC_BUTTON_RESET_GAME) {
+        ResetGame();
     }
     return TRUE;
 }
 
 // Step 4: the Window Procedure
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
@@ -63,18 +205,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         return OnCommand(hwnd, msg, wParam, lParam);
     case WM_LBUTTONDOWN:
-        for (int i = 0; i < sizeof(btns) / sizeof(btns[0]); i++) {
-            RECT rect;
-            GetWindowRect(btns[i].hWnd, &rect);
-            MapWindowPoints(HWND_DESKTOP, GetParent(btns[i].hWnd), (LPPOINT)&rect, 2);
-
-            MoveWindow(btns[i].hWnd, 
-                rect.left+10, 
-                rect.top, 
-                rect.right - rect.left, 
-                rect.bottom - rect.top, 
-                TRUE);
-        }
+        OnLeftButtonDown(hwnd, msg, wParam, lParam);
+        break;
+    case WM_RBUTTONDOWN:
+        OnRightButtonDown(hwnd, msg, wParam, lParam);
         break;
     case WM_SIZE:
         InvalidateRect(hwnd, NULL, TRUE);
@@ -95,6 +229,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         DestroyWindow(hwnd);
         break;
     case WM_DESTROY:
+        OnDestroy(hwnd, msg, wParam, lParam);
         PostQuitMessage(0);
         break;
     default:
