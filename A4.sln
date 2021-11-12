@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Part3", "Part3\Part3.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GUI_P1", "GUI_P1\GUI_P1.vcxproj", "{BA6186E8-A04C-4F58-B158-C12456D7E7FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreadTest", "ThreadTest\ThreadTest.csproj", "{0CE297BA-EC83-4121-9D86-163AAC66F835}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,18 @@ Global
 		{BA6186E8-A04C-4F58-B158-C12456D7E7FF}.Release|x64.Build.0 = Release|x64
 		{BA6186E8-A04C-4F58-B158-C12456D7E7FF}.Release|x86.ActiveCfg = Release|Win32
 		{BA6186E8-A04C-4F58-B158-C12456D7E7FF}.Release|x86.Build.0 = Release|Win32
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Debug|x64.Build.0 = Debug|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Debug|x86.Build.0 = Debug|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Release|x64.ActiveCfg = Release|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Release|x64.Build.0 = Release|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Release|x86.ActiveCfg = Release|Any CPU
+		{0CE297BA-EC83-4121-9D86-163AAC66F835}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
