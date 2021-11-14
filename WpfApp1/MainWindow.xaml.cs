@@ -25,13 +25,21 @@ namespace WpfApp1
     {
         private MailManager mgr = new MailManager();
         private cal add;
+        private TaskScheduler uiThreadScheduler = null;
+
         public MainWindow()
-        {
+        {       
+            this.Initialized += MainWindow_Initialized;
             InitializeComponent();
             mgr.NewMail += Mgr_NewMail;
             mgr.NewMail += Mgr_NewMail1;
             add += (x,y)=> { return x + y; };
             this.Title = "Main Thread ID: " + Thread.CurrentThread.ManagedThreadId;
+        }
+
+        private void MainWindow_Initialized(object sender, EventArgs e)
+        {
+            this.uiThreadScheduler = TaskScheduler.FromCurrentSynchronizationContext();
         }
 
         public int _add(int x, int y)
@@ -83,7 +91,6 @@ namespace WpfApp1
             //}, null, 0, 1000);
 
         }
-        private TaskScheduler uiThreadScheduler = TaskScheduler.FromCurrentSynchronizationContext();
         public void RunByUIThread(UpdateUIFunc cb)
         {
             Task task = new Task(() =>
